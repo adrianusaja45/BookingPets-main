@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+  </head>
+  <body>
+    <h1>Daftar Pengguna Membuka Penitipan</h1>
+    <ul id="user-list"></ul>
+
+    <h2>Halaman Pesan</h2>
+    <ul id="page-container"></ul>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const token = sessionStorage.getItem("token");
+      window.addEventListener("load", async () => {
+        try {
+          if (!token) {
+            console.error("Token tidak tersedia");
+            return;
+          }
+
+          const headers = {
+            token: token,
+            "Content-Type": "application/json",
+          };
+
+          const getAllUser = await fetch("/", {
+            method: "GET",
+            headers: headers,
+          });
+
+          const getOwnUser = await fetch("/users/getuser", {
+            method: "GET",
+            headers: headers,
+          });
+
+          if (getAllUser.ok) {
+            const users = await getAllUser.json();
+            displayUserList(users);
+          } else {
+            console.error("Gagal mengambil data pengguna");
+          }
+
+          if (getOwnUser.ok) {
+            const user = await getOwnUser.json();
+            generatePageList(user.user.id);
+          } else {
+            console.error("Gagal mengambil data pengguna");
+          }
+        } catch (error) {
+          console.error("Terjadi kesalahan:", error);
+        }
+      });
+
+      function displayUserList(data) {
+        const users = data.users;
+        const userList = document.getElementById("user-list");
+        userList.innerHTML = "";
+
+        users.forEach((user) => {
+          const listItem = document.createElement("li");
+          listItem.innerHTML = `<a href="/chat/${user.id}">${user.full_name}</a>`;
+          userList.appendChild(listItem);
+        });
+      }
+
+      function generatePageList(id) {
+        const userId = id;
+        const pageTarget = document.getElementById("page-container");
+        pageTarget.innerHTML = `<a href="/chat/${userId}">Chat</a>`;
+      }
+
+      const socket = io(); // Inisialisasi koneksi Socket.io
+
+      // Bergabung dengan room home untuk menerima pesan masuk
+      socket.emit("joinRoom", "home");
+
+      // Tangani pesan masuk
+      socket.on("incoming message", (data) => {
+        // Tampilkan pesan yang diterima di halaman home.html
+        const messageContainer = document.getElementById("message-container");
+        const messageElement = document.createElement("div");
+        messageElement.textContent = `${data.sender}: ${data.message}`;
+        messageContainer.appendChild(messageElement);
+      });
+    </script>
+  </body>
+</html>

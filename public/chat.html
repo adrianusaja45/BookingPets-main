@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chat</title>
+  </head>
+  <body>
+    <h1>Chat</h1>
+    <div id="chat-container">
+      <!-- Tempat untuk menampilkan percakapan -->
+    </div>
+    <input id="chat-input" type="text" placeholder="Ketik pesan..." />
+    <button id="chat-send">Kirim</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io(); // Inisialisasi koneksi Socket.io
+
+      // Ambil ID pengguna dari URL
+      const userId = window.location.pathname.split("/").pop();
+
+      socket.emit("joinRoom", userId); // Bergabungkan pengguna ke room chat yang sesuai
+
+      // Tangani pesan yang diterima dari server dan tampilkan di halaman
+      socket.on("chat message", (msg) => {
+        const chatContainer = document.getElementById("chat-container");
+        const messageElement = document.createElement("div");
+        messageElement.textContent = msg;
+        chatContainer.appendChild(messageElement);
+      });
+
+      // Tangani pengiriman pesan saat tombol "Kirim" ditekan
+      document.getElementById("chat-send").addEventListener("click", () => {
+        const chatInput = document.getElementById("chat-input");
+        const message = chatInput.value;
+        socket.emit("chat message", { message, roomName: userId }); // Kirim pesan ke room chat yang sesuai
+        chatInput.value = "";
+      });
+    </script>
+  </body>
+</html>
